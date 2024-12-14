@@ -95,7 +95,7 @@ def post_to_medium(title, content):
     logging.info('Posting article to Medium.')
     url = 'https://api.medium.com/v1/users/1d18a388262a57818ce22bb52ea3126879e2d342372ef7662de5335a5c44035ef/posts'
     headers = {
-        'Authorization': f'Bearer {os.getenv('MEDIUM_ACCESS_TOKEN')}',
+        'Authorization': f'Bearer {os.getenv("MEDIUM_ACCESS_TOKEN")}',
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
