@@ -23,7 +23,7 @@ jobs:
     
     - name: Run the script
       env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Uses the secret you stored
+        OPENAI_API_KEY: ${{ secrets.OPEN_API_KEY }}  # Uses the secret you stored
         MEDIUM_ACCESS_TOKEN: ${{ secrets.MEDIUM_ACCESS_TOKEN }}  # Uses the Medium token secret
       run: |
         python script.py  # Run your Python script
