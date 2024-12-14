@@ -117,14 +117,13 @@ def post_to_medium(title, content):
 def scheduled_job():
     rss_feed_urls = [
         "https://medcitynews.com/feed/",
-        "https://endpts.com/feed/"
-        "https://biopharmconsortium.com/blog/feed/"
-        "https://www.ebe-biopharma.eu/blog/feed/"
-        "https://www.biopharminternational.com/rss"
+        #"https://endpts.com/feed/"
+       # "https://biopharmconsortium.com/blog/feed/"
+        # "https://www.biopharminternational.com/rss"
         "https://www.biopharmadive.com/feeds/news/",
         "https://www.fiercepharma.com/rss/xml",
         "https://www.fiercebiotech.com/rss/xml",
-        "https://www.fiercehealthcare.com/rss/xml"
+        #"https://www.fiercehealthcare.com/rss/xml"
     ]
     articles = fetch_rss_feeds(rss_feed_urls)
     if articles:
