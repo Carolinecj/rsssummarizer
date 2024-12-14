@@ -12,6 +12,22 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+#test open ai connection
+def test_openai_connection():
+    try:
+        response = requests.get('https://api.openai.com/v1/models', headers={
+            'Authorization': f'Bearer {os.getenv("OPENAI_API_KEY")}'
+        })
+        if response.status_code == 200:
+            logging.info("Successfully connected to OpenAI API.")
+        else:
+            logging.error(f"Failed to connect to OpenAI: {response.status_code} {response.text}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error connecting to OpenAI API: {e}")
+
+test_openai_connection()
+
+
 # Fetch articles from multiple RSS Feeds
 def fetch_rss_feeds(feed_urls):
     logging.info('Fetching articles from RSS feeds.')
