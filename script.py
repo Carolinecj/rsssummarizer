@@ -59,10 +59,20 @@ def summarize_articles_batch(articles):
     logging.info('Summarizing articles in batch.')
 
     # Prepare the batch prompt
-    batch_prompt = "You are a helpful assistant preparing relevant information for your boss who is an investment analyst in the medical technology space. He needs well-summarized articles with relevant insights for investment decisions. Most importantly, skip the article if it is not relevant or if no specific company is mentioned. Summarize the articles as follows:\n\n"
+    batch_prompt = """You are a helpful assistant preparing summarized articles for an investment analyst in the medical technology space. The analyst needs concise, relevant insights for investment decisions. Your task is to:
+1. Skip articles that do not mention a specific company or contain irrelevant information.
+2. Highlight the most important takeaways about companies, their activities, and market impact.
+
+Provide your summaries in the following format:
+- Article Number: [Number]
+- Key Companies Mentioned: [List of company names or "None"]
+- Summary: [Concise summary of the article]
+
+Here are the articles to summarize:
+"""
     
     for i, article in enumerate(articles):
-        batch_prompt += f"Article {i+1}: {article['summary']}\n"
+        batch_prompt += f"""Article {i+1}: \nTitle: {article['title']} \nContent: {article['summary']}\n"""
 
     try:
         response = openai.chat.completions.create(
