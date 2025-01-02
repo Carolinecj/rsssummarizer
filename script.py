@@ -39,16 +39,20 @@ def fetch_rss_feeds(feed_urls):
         feed = feedparser.parse(feed_url)
         if 'entries' in feed:
             for entry in feed.entries:
-                logging.info(f'Processing entry: {entry.title}')
-                published = datetime(*entry.published_parsed[:6])
-                logging.info(f'Published date: {published}')
-                if published > yesterday:
+                 # Check if published_parsed exists and is not None
+                if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                    published = datetime(*entry.published_parsed[:6])
+                    logging.info(f'Published date: {published}') 
+                # Check if the article was published after yesterday
+                    if published > yesterday:
                     logging.info(f'Article is within the last 24 hours: {entry.title}')
                     articles.append({
                         'title': entry.title,
                         'link': entry.link,
                         'summary': entry.summary
                     })
+                    else
+                        logging.warning(f'No published date for entry: {entry.title}')
         else:
             logging.warning(f'No entries found in feed: {feed_url}')
     logging.info(f'Fetched {len(articles)} new articles.')
