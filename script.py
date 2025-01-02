@@ -51,7 +51,7 @@ def fetch_rss_feeds(feed_urls):
                             'link': entry.link,
                             'summary': entry.summary
                         })
-                    else
+                    else:
                         logging.warning(f'No published date for entry: {entry.title}')
         else:
             logging.warning(f'No entries found in feed: {feed_url}')
