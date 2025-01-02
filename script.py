@@ -5,6 +5,7 @@ import requests
 import time
 from datetime import datetime, timedelta
 import os
+import re
 
 # Configure OpenAI API Key
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -12,7 +13,7 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-#test open ai connection
+# Test OpenAI connection
 def test_openai_connection():
     try:
         response = requests.get('https://api.openai.com/v1/models', headers={
@@ -27,7 +28,6 @@ def test_openai_connection():
 
 test_openai_connection()
 
-
 # Fetch articles from multiple RSS Feeds
 def fetch_rss_feeds(feed_urls):
     logging.info('Fetching articles from RSS feeds.')
@@ -39,91 +39,78 @@ def fetch_rss_feeds(feed_urls):
         feed = feedparser.parse(feed_url)
         if 'entries' in feed:
             for entry in feed.entries:
-                 # Check if published_parsed exists and is not None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
                     published = datetime(*entry.published_parsed[:6])
-                    logging.info(f'Published date: {published}') 
-                # Check if the article was published after yesterday
                     if published > yesterday:
-                        logging.info(f'Article is within the last 24 hours: {entry.title}')
                         articles.append({
                             'title': entry.title,
                             'link': entry.link,
                             'summary': entry.summary
                         })
-                    else:
-                        logging.warning(f'No published date for entry: {entry.title}')
         else:
             logging.warning(f'No entries found in feed: {feed_url}')
     logging.info(f'Fetched {len(articles)} new articles.')
     return articles
 
-# Summarize multiple articles using ChatGPT in one API call
-def summarize_articles_batch(articles):
-    logging.info('Summarizing articles in batch.')
+# Summarize a single article using ChatGPT
+def summarize_article(article, index):
+    prompt = f"""You are a helpful assistant preparing a summary for an investment analyst in the medical technology space.
+Summarize the following article concisely. Mention key companies and their activities.
 
-    # Prepare the batch prompt
-    batch_prompt = """You are a helpful assistant preparing summarized articles for an investment analyst in the medical technology space. The analyst needs concise, relevant insights for investment decisions. Your task is to:
-1. Skip articles that do not mention a specific company or contain irrelevant information.
-2. Highlight the most important takeaways about companies, their activities, and market impact.
+Article {index}:
+Title: {article['title']}
+Content: {article['summary']}
 
-Provide your summaries in the following format:
-- Article Number: [Number]
-- Key Companies Mentioned: [List of company names or "None"]
+Respond in the following format:
+- Key Companies Mentioned: [List of companies or "None"]
 - Summary: [Concise summary of the article]
-
-Here are the articles to summarize:
 """
-    
-    for i, article in enumerate(articles):
-        batch_prompt += f"""Article {i+1}: \nTitle: {article['title']} \nContent: {article['summary']}\n"""
 
     try:
         response = openai.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": batch_prompt}
+                {"role": "system", "content": "You are an assistant summarizing articles for investment analysts."},
+                {"role": "user", "content": prompt}
             ]
         )
-        
-        # Split the response back into individual article summaries
-        summaries = response.choices[0].message.content.strip().split("\n\n")
-        logging.info('Articles summarized in batch.')
-        return summaries
-
+        summary = response.choices[0].message.content.strip()
+        return summary
     except Exception as e:
-        logging.error(f'Error summarizing articles in batch: {e}')
-        return ['Summary not available.'] * len(articles)
+        logging.error(f"Error summarizing article {index}: {e}")
+        return f"- Article Number: {index}\n- Status: 'Summary could not be processed.'"
 
+# Summarize multiple articles
+def summarize_articles(articles):
+    summaries = []
+    for index, article in enumerate(articles, start=1):
+        summary = summarize_article(article, index)
+        summaries.append(summary)
+    return summaries
+
+# Create blog post content
 def create_blog_post(articles, summaries):
     logging.info('Creating blog post content.')
 
-    # Initialize content strings
     title_list = ""
     detailed_summaries = ""
 
-    for idx, (article, summary) in enumerate(zip(articles, summaries)):
-        if summary != 'NA':
-            # Create the title list with links
-            title_list += f"1. [{article['title']}](#article-{idx+1})\n"
-            
-            # Create detailed summaries section
-            detailed_summaries += (
-                f"## <a name='article-{idx+1}'></a>{article['title']}\n\n"
-                f"{summary}\n\n"
-                f"[Read more]({article['link']})\n\n"
-            )
+    for idx, (article, summary) in enumerate(zip(articles, summaries), start=1):
+        title_list += f"{idx}. [{article['title']}](#article-{idx})\n"
+        detailed_summaries += (
+            f"## <a name='article-{idx}'></a>{article['title']}\n\n"
+            f"{summary}\n\n"
+            f"[Read more]({article['link']})\n\n"
+        )
 
-    # Combine the title list and detailed summaries
     blog_content = f"{title_list}\n\n{detailed_summaries}"
-    
     logging.info('Blog post content created.')
     return blog_content
 
 # Post to Medium
 def post_to_medium(title, content):
     logging.info('Posting article to Medium.')
-    url = 'https://api.medium.com/v1/users/1d18a388262a57818ce22bb52ea3126879e2d342372ef7662de5335a5c44035ef/posts'
+    url = 'https://api.medium.com/v1/users/your_user_id/posts'
     headers = {
         'Authorization': f'Bearer {os.getenv("MEDIUM_ACCESS_TOKEN")}',
         'Content-Type': 'application/json',
@@ -133,15 +120,13 @@ def post_to_medium(title, content):
         'title': title,
         'contentFormat': 'markdown',
         'content': content,
-        'publishStatus': 'draft'  # To create a draft
+        'publishStatus': 'draft'
     }
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 201:
         logging.info('Article successfully posted to Medium as a draft.')
-        print('Article successfully posted to Medium as a draft.')
     else:
         logging.error(f'Failed to post article to Medium: {response.status_code} {response.text}')
-        print(f'Failed to post article to Medium: {response.status_code} {response.text}')
 
 # Automated job
 def scheduled_job():
@@ -149,18 +134,18 @@ def scheduled_job():
         "https://medcitynews.com/feed/",
         "https://endpts.com/feed/",
         "https://biopharmconsortium.com/blog/feed/",
-        "https://www.biopharminternational.com/rss",
         "https://www.biopharmadive.com/feeds/news/",
         "https://www.fiercepharma.com/rss/xml",
         "https://www.fiercebiotech.com/rss/xml",
         "https://www.fiercehealthcare.com/rss/xml"
     ]
+
     articles = fetch_rss_feeds(rss_feed_urls)
     if articles:
-        summaries = summarize_articles_batch(articles)
+        summaries = summarize_articles(articles)
         blog_title = f"Daily MedTech and Pharma market highlights for {datetime.now().strftime('%Y-%m-%d')}"
         blog_content = create_blog_post(articles, summaries)
         post_to_medium(blog_title, blog_content)
 
-# Call the job function directly for testing
+# Run the job for testing
 scheduled_job()
