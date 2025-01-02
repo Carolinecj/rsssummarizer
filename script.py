@@ -45,12 +45,12 @@ def fetch_rss_feeds(feed_urls):
                     logging.info(f'Published date: {published}') 
                 # Check if the article was published after yesterday
                     if published > yesterday:
-                    logging.info(f'Article is within the last 24 hours: {entry.title}')
-                    articles.append({
-                        'title': entry.title,
-                        'link': entry.link,
-                        'summary': entry.summary
-                    })
+                        logging.info(f'Article is within the last 24 hours: {entry.title}')
+                        articles.append({
+                            'title': entry.title,
+                            'link': entry.link,
+                            'summary': entry.summary
+                        })
                     else
                         logging.warning(f'No published date for entry: {entry.title}')
         else:
