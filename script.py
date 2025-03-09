@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 import re
 
-# Configure OpenAI API Key
+
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Configure logging
